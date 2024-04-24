@@ -13,7 +13,28 @@ def irfl(bug_report, source_dir):
     5.  Report the top five files
     """
 
-    
+    # step1. collect file paths into docs
+    docs = [bug_report]
+    for (dirpath, dirnames, filenames) in os.walk(source_dir):
+        # print(dirpath, dirnames, filenames)
+        for filename in filenames:
+            if filename.endswith('java'):
+                docs.append(os.path.join(dirpath, filename))
+
+    # step2. vectorize
+    vectorizer = TfidfVectorizer(input="filename", decode_error="ignore", stop_words="english")
+    tfidfs = vectorizer.fit_transform(docs)
+
+    # step3. compute cosine similarity
+    cos_sim = cosine_similarity(tfidfs)
+
+    # step4. rank
+    suspiciousness = zip(docs[1:], cos_sim[0][1:])
+    suspiciousness = sorted(suspiciousness, key=lambda x: x[1], reverse=True)
+
+    # step5. report
+    for (file, score) in suspiciousness[:5]:
+        print("{0:s}: {1:0.3f}".format(file, float(score)))
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='IR Based Fault Localisation')
